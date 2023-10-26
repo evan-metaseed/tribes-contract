@@ -2,17 +2,13 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./ERC721Common.sol";
 
-contract tribesStudio is Ownable, ERC721Common, ReentrancyGuard {
-    uint256 public MAX_SUPPLY = 5555;
+contract tribesStudio is AccessControlEnumerable, ERC721Common {
     uint256 public PRICE = 0 ether;
     uint256 public PRESALE_PRICE = 0 ether;
-    uint256 public maxPresale = 10;
+    uint256 public maxPresale = 3;
     uint256 public maxPublic = 3;
 
     bool public _isActive = false;
@@ -20,6 +16,21 @@ contract tribesStudio is Ownable, ERC721Common, ReentrancyGuard {
 
     mapping(address => uint8) public _preSaleListCounter;
     mapping(address => uint8) public _publicCounter;
+
+    modifier onlyAdmin() {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "tribesStudio: must have admin role");
+        _;
+    }
+
+    function supportsInterface(bytes4 interfaceId) 
+        public 
+        view 
+        virtual 
+        override(ERC721Common, AccessControlEnumerable) 
+        returns (bool) 
+    {
+        return super.supportsInterface(interfaceId);
+    }
 
     // merkle root
     bytes32 public preSaleRoot;
@@ -36,65 +47,40 @@ contract tribesStudio is Ownable, ERC721Common, ReentrancyGuard {
     }
 
     //set variables
-    function setActive(bool isActive) external onlyOwner {
+    function setActive(bool isActive) external onlyAdmin {
         _isActive = isActive;
     }
 
-    function presaleActive(bool isActive) external onlyOwner {
+    function presaleActive(bool isActive) external onlyAdmin {
         _presaleActive = isActive;
     }
 
-    function setMaxPresale(uint256 _maxPresale) external onlyOwner {
+    function setMaxPresale(uint256 _maxPresale) external onlyAdmin {
         maxPresale = _maxPresale;
     }
 
-    function setMaxPublic(uint256 _maxPublic) external onlyOwner {
+    function setMaxPublic(uint256 _maxPublic) external onlyAdmin {
         maxPublic = _maxPublic;
     }
 
-    function setPreSaleRoot(bytes32 _root) external onlyOwner {
+    function setPreSaleRoot(bytes32 _root) external onlyAdmin {
         preSaleRoot = _root;
     }
 
-    function setSupply(uint256 _supply) external onlyOwner {
-        MAX_SUPPLY = _supply;
-    }
-
-    function setPrice(uint256 _price) external onlyOwner {
+    function setPrice(uint256 _price) external onlyAdmin {
         PRICE = _price;
     }
 
-    function setPresalePrice(uint256 _price) external onlyOwner {
+    function setPresalePrice(uint256 _price) external onlyAdmin {
         PRESALE_PRICE = _price;
     }
 
     // Internal for marketing, devs, etc
     function internalMint(uint256 quantity, address to)
         external
-        onlyOwner
-        nonReentrant
+        onlyAdmin
     {
-        require(
-            totalSupply() + quantity <= MAX_SUPPLY,
-            "would exceed max supply"
-        );
         _safeMint(to, quantity);
-    }
-
-    // airdrop
-    function airdrop(address[] calldata _addresses) external onlyOwner {
-        for (uint256 i = 0; i < _addresses.length; i++) {
-            require(_addresses[i] != address(0), "cannot send to 0 address");
-            _safeMint(_addresses[i], 1);
-        }
-    }
-
-    function setBaseURI(string calldata baseURI) external override onlyOwner {
-        _baseTokenURI = baseURI;
-    }
-
-    function _baseURI() internal view virtual override returns (string memory) {
-        return _baseTokenURI;
     }
 
     // Presale
@@ -102,7 +88,6 @@ contract tribesStudio is Ownable, ERC721Common, ReentrancyGuard {
         external
         payable
         callerIsUser
-        nonReentrant
     {
         require(_presaleActive, "Pre mint is not active");
         require(
@@ -110,10 +95,6 @@ contract tribesStudio is Ownable, ERC721Common, ReentrancyGuard {
             "Exceeded max available to purchase"
         );
         require(quantity > 0, "Must mint more than 0 tokens");
-        require(
-            totalSupply() + quantity <= MAX_SUPPLY,
-            "Purchase would exceed max supply of Tokens"
-        );
         require(PRESALE_PRICE * quantity == msg.value, "Incorrect funds");
 
         // check proof & mint
@@ -132,13 +113,11 @@ contract tribesStudio is Ownable, ERC721Common, ReentrancyGuard {
     function publicSaleMint(uint8 quantity)
         external
         payable
-        nonReentrant
         callerIsUser
     {
         require(quantity > 0, "Must mint more than 0 tokens");
         require(_isActive, "public sale has not begun yet");
         require(PRICE * quantity == msg.value, "Incorrect funds");
-        require(totalSupply() + quantity <= MAX_SUPPLY, "reached max supply");
         require(
             _publicCounter[msg.sender] + quantity <= maxPublic,
             "Exceeded max available to purchase"
