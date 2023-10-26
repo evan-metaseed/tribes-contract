@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "./ERC721A.sol";
+import "./ERC721Common.sol";
 
-contract roninTest is Ownable, ERC721A, ReentrancyGuard {
+contract tribesStudio is Ownable, ERC721Common, ReentrancyGuard {
     uint256 public MAX_SUPPLY = 5555;
     uint256 public PRICE = 0 ether;
     uint256 public PRESALE_PRICE = 0 ether;
@@ -26,8 +26,9 @@ contract roninTest is Ownable, ERC721A, ReentrancyGuard {
 
     constructor(
         string memory name,
-        string memory symbol
-    ) ERC721A(name, symbol) {}
+        string memory symbol,
+        string memory baseURI
+    ) ERC721Common(name, symbol, baseURI) {}
 
     modifier callerIsUser() {
         require(tx.origin == msg.sender, "The caller is another contract");
@@ -88,10 +89,7 @@ contract roninTest is Ownable, ERC721A, ReentrancyGuard {
         }
     }
 
-    // metadata URI
-    string private _baseTokenURI;
-
-    function setBaseURI(string calldata baseURI) external onlyOwner {
+    function setBaseURI(string calldata baseURI) external override onlyOwner {
         _baseTokenURI = baseURI;
     }
 
@@ -148,11 +146,5 @@ contract roninTest is Ownable, ERC721A, ReentrancyGuard {
 
         _safeMint(msg.sender, quantity);
         _publicCounter[msg.sender] = _publicCounter[msg.sender] + quantity;
-    }
-
-    // withdraw to owner wallet
-    function withdraw() external onlyOwner {
-        uint256 balance = address(this).balance;
-        payable(msg.sender).transfer(balance);
     }
 }
