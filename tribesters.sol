@@ -3,9 +3,11 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./ERC721Common.sol";
 
-contract tribesStudio is AccessControlEnumerable, ERC721Common {
+contract Tribesters is ERC721Common, ReentrancyGuard, Ownable {
     uint256 public PRICE = 0 ether;
     uint256 public PRESALE_PRICE = 0 ether;
     uint256 public maxPresale = 3;
@@ -16,21 +18,7 @@ contract tribesStudio is AccessControlEnumerable, ERC721Common {
 
     mapping(address => uint8) public _preSaleListCounter;
     mapping(address => uint8) public _publicCounter;
-
-    modifier onlyAdmin() {
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "tribesStudio: must have admin role");
-        _;
-    }
-
-    function supportsInterface(bytes4 interfaceId) 
-        public 
-        view 
-        virtual 
-        override(ERC721Common, AccessControlEnumerable) 
-        returns (bool) 
-    {
-        return super.supportsInterface(interfaceId);
-    }
+    
 
     // merkle root
     bytes32 public preSaleRoot;
@@ -47,38 +35,38 @@ contract tribesStudio is AccessControlEnumerable, ERC721Common {
     }
 
     //set variables
-    function setActive(bool isActive) external onlyAdmin {
+    function setActive(bool isActive) external onlyOwner {
         _isActive = isActive;
     }
 
-    function presaleActive(bool isActive) external onlyAdmin {
+    function presaleActive(bool isActive) external onlyOwner {
         _presaleActive = isActive;
     }
 
-    function setMaxPresale(uint256 _maxPresale) external onlyAdmin {
+    function setMaxPresale(uint256 _maxPresale) external onlyOwner {
         maxPresale = _maxPresale;
     }
 
-    function setMaxPublic(uint256 _maxPublic) external onlyAdmin {
+    function setMaxPublic(uint256 _maxPublic) external onlyOwner {
         maxPublic = _maxPublic;
     }
 
-    function setPreSaleRoot(bytes32 _root) external onlyAdmin {
+    function setPreSaleRoot(bytes32 _root) external onlyOwner {
         preSaleRoot = _root;
     }
 
-    function setPrice(uint256 _price) external onlyAdmin {
+    function setPrice(uint256 _price) external onlyOwner {
         PRICE = _price;
     }
 
-    function setPresalePrice(uint256 _price) external onlyAdmin {
+    function setPresalePrice(uint256 _price) external onlyOwner {
         PRESALE_PRICE = _price;
     }
 
     // Internal for marketing, devs, etc
     function internalMint(uint256 quantity, address to)
         external
-        onlyAdmin
+        onlyOwner
     {
         _safeMint(to, quantity);
     }
@@ -88,6 +76,7 @@ contract tribesStudio is AccessControlEnumerable, ERC721Common {
         external
         payable
         callerIsUser
+        nonReentrant
     {
         require(_presaleActive, "Pre mint is not active");
         require(
@@ -114,6 +103,7 @@ contract tribesStudio is AccessControlEnumerable, ERC721Common {
         external
         payable
         callerIsUser
+        nonReentrant
     {
         require(quantity > 0, "Must mint more than 0 tokens");
         require(_isActive, "public sale has not begun yet");
