@@ -116,4 +116,10 @@ contract Tribesters is ERC721Common, ReentrancyGuard, Ownable {
         _safeMint(msg.sender, quantity);
         _publicCounter[msg.sender] = _publicCounter[msg.sender] + quantity;
     }
+
+    // withdraw to owner wallet
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        payable(msg.sender).transfer(balance);
+    }
 }
