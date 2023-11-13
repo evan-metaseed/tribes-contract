@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import "./node_modules/@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "./node_modules/@openzeppelin/contracts/access/Ownable.sol";
-import "./node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./ERC721Common.sol";
 
 contract Tribesters is ERC721Common, ReentrancyGuard, Ownable {
@@ -12,13 +12,13 @@ contract Tribesters is ERC721Common, ReentrancyGuard, Ownable {
     uint256 public PRESALE_PRICE = 0 ether;
     uint256 public maxPresale = 3;
     uint256 public maxPublic = 3;
+    uint256 private _currentTokenId = 0;
 
     bool public _isActive = false;
     bool public _presaleActive = false;
 
     mapping(address => uint8) public _preSaleListCounter;
     mapping(address => uint8) public _publicCounter;
-    
 
     // merkle root
     bytes32 public preSaleRoot;
@@ -63,12 +63,20 @@ contract Tribesters is ERC721Common, ReentrancyGuard, Ownable {
         PRESALE_PRICE = _price;
     }
 
+    // mint override
+    function mint(address to, uint256 quantity) internal {
+        for (uint256 i = 0; i < quantity; i++) {
+            _currentTokenId++;
+            _safeMint(to, _currentTokenId);
+        }
+    }
+
     // Internal for marketing, devs, etc
     function internalMint(uint256 quantity, address to)
         external
         onlyOwner
     {
-        _safeMint(to, quantity);
+        mint(to, quantity);
     }
 
     // Presale
@@ -92,7 +100,7 @@ contract Tribesters is ERC721Common, ReentrancyGuard, Ownable {
             MerkleProof.verify(_merkleProof, preSaleRoot, leaf),
             "Invalid MerkleProof"
         );
-        _safeMint(msg.sender, quantity);
+        mint(msg.sender, quantity);
         _preSaleListCounter[msg.sender] =
             _preSaleListCounter[msg.sender] +
             quantity;
@@ -113,7 +121,7 @@ contract Tribesters is ERC721Common, ReentrancyGuard, Ownable {
             "Exceeded max available to purchase"
         );
 
-        _safeMint(msg.sender, quantity);
+        mint(msg.sender, quantity);
         _publicCounter[msg.sender] = _publicCounter[msg.sender] + quantity;
     }
 
