@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./ERC721Common.sol";
+import "./ERC721Common.sol"; 
 
 contract Tribesters is ERC721Common, ReentrancyGuard, Ownable {
     uint256 public PRICE = 0 ether;
@@ -20,7 +20,7 @@ contract Tribesters is ERC721Common, ReentrancyGuard, Ownable {
     mapping(address => uint8) public _preSaleListCounter;
     mapping(address => uint8) public _publicCounter;
 
-    // merkle root
+    // merkle roots
     bytes32 public preSaleRoot;
 
     constructor(
